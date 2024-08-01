@@ -3,17 +3,25 @@ type FailureM<'a> =
   | Errors of string list
 with
   // we have to call it 'ret', because 'pure' is a reserved word in F#
+
+  // ret is just creates a basic FailureM
   static member ret v = Ok v
+  //apply <*>
   static member (<*>) (f : FailureM<'a -> 'b>, v : FailureM<'a>) : FailureM<'b> =
     match f, v with
     | Errors s0, Errors s1 -> Errors (s0 @ s1)
     | Errors s0, _ -> Errors s0
     | _, Errors s1 -> Errors s1
     | Ok f, Ok v -> FailureM<'b>.ret (f v)
+  
+  
+  //monaid of failure 
   static member (>>=) (v : FailureM<'a>, f : 'a -> FailureM<'b>) : FailureM<'b> =
     match v with
     | Errors sx -> Errors sx
     | Ok v -> f v
+  
+  
   static member fmap (f : 'a -> 'b) (v : FailureM<'a>) : FailureM<'b> =
     match v with
     | Errors s -> Errors s
@@ -69,3 +77,19 @@ let test3 () =
     <*> (file_exists "test.txt")
     <*> (file_can_read "test.txt")
     <*> (file_contains_moo "test.txt")
+
+
+type ErrorBuilder () = 
+
+  member __.Bind(v: FailureM<'a>, f : 'a -> FailureM<'b>) = (>>=) v f 
+  member __.Return v = ret v 
+
+let errorBuild = new ErrorBuilder()
+
+let eBuilderTest () = 
+  errorBuild{
+    let! a = test0 ()
+    let! b = test2 ()
+    let! c = test3 ()
+    return (a, b, c)
+  }
