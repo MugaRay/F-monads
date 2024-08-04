@@ -1,8 +1,15 @@
 type Reader<'env,'output> = Reader of ('env -> 'output)
 
+
+// Reader type is a function that takes in a env and returns output
+
+// if that's the case then it's identy function should just be a function that returns the inital value
 let ret v =
   // the default is a function which ignores its input and returns the value given.
   Reader <| fun _ -> v
+
+
+
 
 let fmap (f : 'a -> 'b) (v : Reader<'env,'a>) : Reader<'env,'b> =
   Reader (fun x ->
