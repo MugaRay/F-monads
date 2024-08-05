@@ -10,13 +10,18 @@ let ret v =
 
 
 
-
+// applying f to the function v with x as the argument 
+// creates a new function that has f appied to it
 let fmap (f : 'a -> 'b) (v : Reader<'env,'a>) : Reader<'env,'b> =
   Reader (fun x ->
     let (Reader read) = v in
     f (read x)
   )
 
+
+// f is a reader that takes a function that returns a function
+// v is a normal reader 
+// returns a reader with the appied f function 
 let apply (f : Reader<'env,'a -> 'b>) (v : Reader<'env,'a>) : Reader<'env,'b> =
   let (Reader f') = f
   let (Reader v') = v
@@ -24,11 +29,18 @@ let apply (f : Reader<'env,'a -> 'b>) (v : Reader<'env,'a>) : Reader<'env,'b> =
     printfn $"Applying: {f'} {v}'"
     let previous = v' env // this gets me an 'a
     printfn $"Previous is: {previous}"
-    f' env previous
+    f' env previous  // Higher order functions are taking place here. (f' env) returns a function that then uses previous
   )
 
+
+// standard un-wrap, apply function , re-wrap
 let bind (v : Reader<'env,'a>) (f : 'a -> Reader<'env,'b>) : Reader<'env,'b> =
-  let (Reader v') = v
+  let (Reader v') = v // unwrap v to get back function 
+
+  // reader is a function that takes env -> a
+  // f is a function that takes a -> Reader<'env, b>
+  // so we need to apply v to get 'a in this case 
+  // Once we do tha we apply f to the output of v and recieve a new reader. which is b in this case
   Reader (fun input ->
     let (Reader b) = f (v' input)
     b input
