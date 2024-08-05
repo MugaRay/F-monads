@@ -43,10 +43,13 @@ let bind (v : Reader<'env,'a>) (f : 'a -> Reader<'env,'b>) : Reader<'env,'b> =
   // Once we do tha we apply f to the output of v and recieve a new reader. which is b in this case
   Reader (fun input ->
     let (Reader b) = f (v' input)
-    b input
+    b input // creating the new function for reader
   )
 
 let inline fetchList key =
+  // takes in a list of tuples
+  // returns a reader that returns the second element of a tuple that has a particular key
+  // Reader (List<a * b> -> b) 
   printfn $"Fetching {key} from the configuration list"
   Reader (List.find (fun (k,_) -> k = key) >> snd)
 
@@ -61,6 +64,9 @@ let locally (modifier : 'env -> 'env) (v : Reader<'env,'a>) : Reader<'env,'a> =
     v' (modifier input)
   )
 
+// just gives the reader monad an enviroment 
+// in this case just appiles the function reader
+// creates an actual output
 let inEnv e f =
   printfn "Executing function within environment %A" e
   let (Reader f') = f in
@@ -68,6 +74,14 @@ let inEnv e f =
 
 let func0 =
   let (<*>) = apply
+  // ret (+) -> Reader(fun _ -> + ). creates an empty reader that returns the add function 
+  // ret (3) -> same thing but returns Reader(fun _ -> 3)
+  // fetchList creates a Reader in this case that looks for a tuple in a list that has the 
+  // first value as v and returns that value
+  // this is basically an add 3 function to any value that has the key v in a list of tuples
+  // just an accumlation of different Reader's to make one big reader function
+  // it's more or less just this in the end ret (+) (combine ret 3 and fetchList)
+  // it also does this recurively  
   ret (+) <*> ret 3 <*> (fetchList "v")
 
 let func1 =
@@ -79,6 +93,7 @@ let func2 =
   ret (+) <*> locally (Map.add "k" 900000) func1 <*> (fetchMap "k")
 
 let test0 () =
+  // it is a list of tuples in the form of [("addr" , 6), ('v', 90) ]
   inEnv ["addr", 6; "v", 90] func0
 
 let test1 () =
